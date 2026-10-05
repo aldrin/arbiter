@@ -1,0 +1,86 @@
+[package]
+name = "arbiter"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Structured decisions from a decision model: typed answers with calibrated probabilities, for code to act on"
+license = "MIT"
+repository = "https://github.com/aldrin/arbiter"
+keywords = ["decisions", "structured-output", "classification", "typesafe", "openrouter"]
+categories = ["api-bindings"]
+publish = false
+
+# Declared only for `required-features`; the name and path are Cargo's
+# defaults.
+[[bin]]
+name = "arbiter"
+required-features = ["cli"]
+
+# Declared rather than auto-discovered, only for `test = true`: the example
+# carries unit tests for its TSV reader, and Cargo does not run an example's
+# tests unless asked. Its runtime comes from dev-dependencies, so it needs no
+# feature of its own. `choice_report` is auto-discovered: it has no tests of
+# its own and needs neither a runtime nor a feature.
+[[example]]
+name = "cti_mcq"
+test = true
+
+[features]
+# Nothing by default: this is a tool to embed, so a library consumer should
+# not inherit an argument parser, a log subscriber, or an async runtime it
+# never asked for. Build the binary with `--features cli`.
+default = []
+# The `arbiter` binary: argument parsing, a log subscriber, and a runtime to
+# block on. The library itself never names tokio — the host supplies one.
+cli = ["dep:clap", "dep:tracing-subscriber", "dep:tokio"]
+
+[dependencies]
+reqwest = { version = "0.13", default-features = false, features = [
+    "json",
+    # rustls, not the platform's OpenSSL: no C toolchain needed to build.
+    "rustls",
+    # Honour HTTP_PROXY/HTTPS_PROXY, as anything behind a corporate proxy needs.
+    "system-proxy",
+] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tracing = "0.1"
+
+# Binary only.
+clap = { version = "4", features = ["derive"], optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
+# `rt-multi-thread` implies `rt`; `time` and `net` are what the runtime's
+# `enable_all()` drives. reqwest enables both too, but inheriting them from a
+# dependency would make an upstream change a runtime panic instead of a build
+# error.
+tokio = { version = "1", features = [
+    "rt-multi-thread",
+    "time",
+    "net",
+], optional = true }
+
+[dev-dependencies]
+# The stub endpoint is a plain TcpListener, so the tests need no HTTP-server or
+# temp-file dependency. `macros` is for `#[tokio::test]` and the example's
+# `#[tokio::main]`; the rest is what the stub and the example use directly.
+tokio = { version = "1", features = [
+    "rt-multi-thread",
+    "macros",
+    "net",
+    "io-util",
+    "sync",
+] }
+
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+must_use_candidate = "allow"
+# Only fires on proper nouns here (OpenRouter, TypeSafe), not identifiers.
+doc_markdown = "allow"

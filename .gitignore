@@ -1,0 +1,15 @@
+/target
+**/*.rs.bk
+*.pdb
+
+# What the evaluation harness writes and the report renderer reads: the
+# split it fetches, the run it records, and the page it draws. All land in the
+# working directory, so these are scoped to the repository root and nothing in
+# a subdirectory is swallowed.
+/cti-mcq.tsv
+/cti-mcq-run.json
+/cti-mcq-report.html
+
+# Credentials are read from the environment; never commit a dotenv file.
+.env
+.env.*

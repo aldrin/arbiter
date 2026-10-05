@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  # No global `RUSTFLAGS: -D warnings`: it would apply to dependencies too, so
+  # one upstream warning breaks the build. `make ci` denies warnings for this
+  # crate only, via clippy and RUSTDOCFLAGS.
+
+jobs:
+  gate:
+    name: lint, test, doc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # rust-toolchain.toml pins the channel and components.
+      - name: Install the pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The same gate `make pre-commit` runs locally, minus the reformatting:
+      # formatting check, clippy as errors, every test, and docs.
+      - name: Gate
+        run: make ci
